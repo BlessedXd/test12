@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # bestrong-docker
 
 ## Task
@@ -134,3 +135,6 @@ resource "azurerm_app_service" "app" {
 ### Optional
 ### I checked if images pushed in ACR and after each build creates a new image layer with its own hash, confirming that the image is updated after each pipeline run. 
 ![Images updates!](./screenshot/images_updates.png "Images updates")
+=======
+# test12
+>>>>>>> 81a438e2d402403eb9549c5ead26d7b6e3cf7beb
