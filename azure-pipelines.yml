@@ -1,0 +1,56 @@
+trigger:
+  - main
+
+pr:
+  - "*"
+
+variables:
+  - group: AzCred
+
+stages:
+  - stage: BuildPush
+    jobs: 
+      - job: buildProject
+        displayName: 'Build and Push project'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - checkout: self
+            displayName: "Checkout the repository"
+          
+          - script: |
+              az login --service-principal --username $(servicePrincipalId) --password $(servicePrincipalKey) --tenant $(tenantId) 
+              az acr login --name $(acrName)
+            displayName: "Login to Azure Container Registry (ACR)"
+          
+          - script: |
+              docker build -t $(acrName).azurecr.io/aspnetcore-webapi-sample:latest .
+            displayName: "Build Docker Image"
+          
+          - script: |
+              docker push $(acrName).azurecr.io/aspnetcore-webapi-sample
+            displayName: "Push Docker Image to ACR"
+          
+  - stage: Deploy
+    jobs:
+      - job: deployProject
+        displayName: "Deploy project"
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+        - task: AzureCLI@2
+          inputs:
+            azureSubscription: AppService
+            scriptType: bash 
+            scriptLocation: inlineScript
+            inlineScript: |
+                az login --service-principal --username $(servicePrincipalId) --password $(servicePrincipalKey) --tenant $(tenantId)
+              
+                az webapp config container set \
+                    --name $(appServiceName) \
+                    --resource-group $(resourceGroup) \
+                    --docker-custom-image-name $(acrName).azurecr.io/aspnetcore-webapi-sample:latest \
+                    --docker-registry-server-url https://$(acrName).azurecr.io \
+                    --docker-registry-server-user $(registryUsername) \
+                    --docker-registry-server-password $(registryPassword)
+          displayName: 'Deploy Docker Container to Azure Web App'
